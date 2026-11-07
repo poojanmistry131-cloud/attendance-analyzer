@@ -96,7 +96,7 @@ def _trend_slope(weekly_series: list[float]) -> float:
         return 0.0
     x = np.arange(len(weekly_series))
     y = np.array(weekly_series)
-    slope, _intercept = np.polyfit(x, y, 1)
+    slope, _ = np.polyfit(x, y, 1)
     return float(slope)
 
 

@@ -8,7 +8,7 @@ An **Attendance Pattern Analyzer & Bunk-Risk Recommender** built with **Python (
 
 Install these on your computer:
 
-1. **Python 3.8 or higher** from https://www.python.org/downloads/
+1. **Python 3.10 or higher** from https://www.python.org/downloads/
    - Run the installer and **tick the box "Add Python to PATH"** at the bottom of the first screen.
    - Click "Install Now".
 2. **VS Code** from https://code.visualstudio.com/
@@ -20,13 +20,13 @@ To check that Python is installed, open Command Prompt and type `python --versio
 
 1. Open this repository page on GitHub.
 2. Click the green **Code** button, then click **Download ZIP**.
-3. Open your Downloads folder. You will find a file named `attendance-analyzer-student-sync.zip`.
+3. Open your Downloads folder. You will find a file named `attendance-analyzer-main.zip`.
 4. Right-click on the zip file and click **Extract All**.
 5. Move the extracted folder to your **C: drive** (or Desktop).
 6. Open **VS Code**.
 7. Press `Ctrl + Shift + E` to open the Explorer panel.
 8. Click **Open Folder**.
-9. Select the extracted folder `attendance-analyzer-student-sync` and click **Select Folder**.
+9. Select the extracted folder `attendance-analyzer-main` and click **Select Folder**.
 10. Install the **Live Server** extension in VS Code (press `Ctrl + Shift + X`, search "Live Server", click Install).
 11. Open the terminal in VS Code by pressing `` Ctrl + ` `` (the backtick key, just below the Esc key).
 12. Go into the backend folder by typing:
@@ -73,7 +73,7 @@ To check that Python is installed, open Command Prompt and type `python --versio
 
 ## Requirements
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - FastAPI, Uvicorn, pandas, numpy, python-multipart, python-dotenv (all installed from `requirements.txt`)
 - A modern web browser
 - (Optional) A Gmail account with an App Password, only for the email feature
@@ -83,8 +83,8 @@ To check that Python is installed, open Command Prompt and type `python --versio
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd <your-repo-name>/attendance-analyzer/backend
+git clone https://github.com/poojanmistry131-cloud/attendance-analyzer.git
+cd attendance-analyzer/backend
 ```
 
 ### 2. (Optional) Create a virtual environment
@@ -147,28 +147,34 @@ On macOS / Linux, use `python3` if `python` does not work.
 6. Change the **From / To** dates or tick present / absent days in the calendar – the percentage updates live.
 7. Click **Email** in the top bar to open the reminder page.
 
-## Sending Reminder Emails (Optional)
+## Email Setup Required to Send Reminders
 
-The email feature sends real emails through Gmail, so it needs a one-time setup:
+The Email page can be opened without setup, but sending real reminder emails requires a one-time Gmail setup. **Without `backend/.env`, sending reminders will fail.**
 
 1. Turn on **2-Step Verification** on your Gmail account: https://myaccount.google.com/security
 2. Create an **App Password** (Google Account → Security → 2-Step Verification → App passwords). Google gives you a 16-character password.
-3. In the `backend` folder, copy `.env.example` to a new file named `.env` and fill it in:
+3. In `attendance-analyzer/backend`, copy `.env.example` to a new file named `.env` and fill in your Gmail sender address and 16-character App Password:
 
    ```env
    GMAIL_ADDRESS=youraddress@gmail.com
    GMAIL_APP_PASSWORD=your16charapppassword
    ```
 
-4. Restart the backend (`uvicorn app:app --reload --port 8000`).
-5. Open the **Email** page, tick the students you want to notify (students below 75% are ticked automatically), edit the subject if you like and click **Send reminder emails**.
+4. Start or restart the backend from the `attendance-analyzer/backend` folder (`uvicorn app:app --reload --port 8000`) so it loads the `.env` settings.
+5. On the **Email** page, enter the recipient email for each selected student, choose whom to notify (students below 75% are selected automatically), edit the subject if desired, then click **Send reminder emails**.
 
 > ⚠️ **Never upload your `.env` file to GitHub.** It contains your Gmail App Password. Keep it only on your own computer.
+
+## Enter Recipient Emails (Frontend)
+
+The email page does not include recipient email addresses in the project code. Enter an address in the **Recipient Email** field for each selected student. Addresses are saved only in that browser's local storage for convenience and are sent to the backend only when you click **Send reminder emails**. To send a reminder to yourself, enter your own address in the selected row(s). Student names and enrollment numbers remain in the roster.
+
+Gmail sending credentials are configured separately in `backend/.env`; never upload that file to GitHub.
 
 ## Project Structure
 
 ```
-attendance-analyzer-student-sync/
+attendance-analyzer/
 ├── README.md
 └── attendance-analyzer/
     ├── backend/
@@ -227,8 +233,8 @@ frontend (HTML/CSS/JS) ──► gauge, charts, calendar, recommendation card
 
 | Where                         | What to change                                              |
 | ----------------------------- | ----------------------------------------------------------- |
-| `frontend/roster.js` → `ROSTER` | Student names, enrollment numbers, emails, starting %     |
-| `frontend/roster.js` → `ALERT_EMAIL` | The email address that receives the reminders        |
+| `frontend/roster.js` → `ROSTER` | Student names, enrollment numbers, and starting percentages |
+| Email page → `Recipient Email` | Enter addresses in the browser; they are not hard-coded in the repository |
 | `frontend/script.js` → `API_BASE` | Backend address (default `http://127.0.0.1:8000`)       |
 | `frontend/email.js` → `API_BASE`  | Same as above, for the email page                       |
 | `frontend/script.js` → `SAMPLE_DATA_FROM / TO` | Default date range of the sample data      |

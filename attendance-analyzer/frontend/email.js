@@ -16,6 +16,11 @@ const API_BASE = "http://127.0.0.1:8000";
 // (index.html) saves each student's real percentage whenever you change
 // their register, and this page picks it up automatically.
 let ROSTER_LIVE = getLiveRoster();
+const savedEmails = alRead(AL_KEYS.recipientEmails, {});
+const emailByName =
+  savedEmails && typeof savedEmails === "object" && !Array.isArray(savedEmails)
+    ? savedEmails
+    : {};
 const checkedByName = {};   // name -> checked? (keeps your manual ticks across refreshes)
 const lastPctByName = {};   // name -> pct at last render (to detect crossing 75%)
 
@@ -42,13 +47,21 @@ function renderRoster() {
     <tr data-idx="${i}">
       <td class="col-check"><input type="checkbox" class="rowChk" data-idx="${i}" ${checkedByName[s.name] ? "checked" : ""} /></td>
       <td class="col-sr">${i + 1}</td>
-      <td><a class="roster-link" href="index.html?student=${encodeURIComponent(s.name)}" title="Open ${s.name}'s dashboard">${s.name}</a></td>
-      <td>${s.enrollment}</td>
-      <td>${s.email}</td>
+      <td><a class="roster-link" href="index.html?student=${encodeURIComponent(s.name)}" title="Open ${escapeHtml(s.name)}'s dashboard">${escapeHtml(s.name)}</a></td>
+      <td>${escapeHtml(s.enrollment)}</td>
+      <td><input type="email" class="recipientEmail" data-idx="${i}" value="${escapeHtml(emailByName[s.name] || "")}" placeholder="Enter recipient email" aria-label="Email for ${escapeHtml(s.name)}" autocomplete="email" /></td>
       <td><span class="roster-pct ${pctClass(s.pct)}">${formatPct(s.pct)}</span></td>
       <td class="col-check"></td>
     </tr>
   `).join("");
+
+  body.querySelectorAll(".recipientEmail").forEach((input) => {
+    input.addEventListener("input", () => {
+      const student = ROSTER_LIVE[parseInt(input.dataset.idx, 10)];
+      emailByName[student.name] = input.value;
+      alWrite(AL_KEYS.recipientEmails, emailByName);
+    });
+  });
 
   body.querySelectorAll(".rowChk").forEach((chk) => {
     const name = ROSTER_LIVE[parseInt(chk.dataset.idx, 10)].name;
@@ -90,9 +103,17 @@ $("sendEmailBtn").addEventListener("click", sendEmails);
 async function sendEmails() {
   const selected = getCheckboxes()
     .filter((c) => c.checked)
-    .map((c) => ROSTER_LIVE[parseInt(c.dataset.idx, 10)]);
+    .map((checkbox) => ({
+      student: ROSTER_LIVE[parseInt(checkbox.dataset.idx, 10)],
+      emailInput: checkbox.closest("tr").querySelector(".recipientEmail"),
+    }));
 
   if (!selected.length) return;
+
+  for (const recipient of selected) {
+    recipient.emailInput.required = true;
+    if (!recipient.emailInput.reportValidity()) return;
+  }
 
   const subject = $("emailSubject").value || "Low attendance notice";
   const sendBtn = $("sendEmailBtn");
@@ -106,11 +127,11 @@ async function sendEmails() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         subject,
-        recipients: selected.map((s) => ({
-          name: s.name,
-          email: s.email,
-          enrollment: s.enrollment,
-          pct: s.pct,
+        recipients: selected.map(({ student, emailInput }) => ({
+          name: student.name,
+          email: emailInput.value.trim(),
+          enrollment: student.enrollment,
+          pct: student.pct,
         })),
       }),
     });

@@ -18,6 +18,9 @@ Kept separate from data_processor.py: data_processor answers "what is
 happening?", recommender.py answers "what should the student do about it?".
 """
 
+import math
+from fractions import Fraction
+
 import numpy as np
 
 DEFAULT_THRESHOLD = 0.75  # 75% is the typical minimum attendance requirement
@@ -40,14 +43,18 @@ def safe_bunks(attended: int, total: int, threshold: float = DEFAULT_THRESHOLD) 
     if total == 0:
         return 0, 0
 
-    max_total = attended / threshold
-    bunks = int(np.floor(max_total - total))
+    # Exact fraction arithmetic: plain float maths gives off-by-one answers
+    # (e.g. 4.2 / 0.35 = 12.000000000000002 -> ceil() wrongly says 13).
+    t = Fraction(threshold).limit_denominator(10000)
+    if t >= 1:               # a 100% requirement: nothing to bunk, nothing to compute
+        return 0, 0
 
+    bunks = math.floor(Fraction(attended) / t - total)
     if bunks >= 0:
-        return bunks, 0
+        return int(bunks), 0
 
-    needed = (threshold * total - attended) / (1 - threshold)
-    return 0, int(np.ceil(max(needed, 0)))
+    needed = math.ceil(max((t * total - attended) / (1 - t), 0))
+    return 0, int(needed)
 
 
 def project_attendance(weekly_series: list[float], weeks_ahead: int = 4) -> float:
@@ -104,11 +111,18 @@ def build_message(subject: str, pct: float, risk_level: str, bunks: int,
             f"and still stay compliant."
         )
     elif risk_level == "Moderate":
-        parts.append(
-            f"You're at {pct:.1f}%, close to the {threshold_pct:.0f}% line. "
-            f"You have about {bunks} safe bunk{'s' if bunks != 1 else ''} left — "
-            f"use them carefully."
-        )
+        if needed > 0:
+            parts.append(
+                f"You're at {pct:.1f}%, below the {threshold_pct:.0f}% requirement. "
+                f"Attend the next {needed} class{'es' if needed != 1 else ''} in a row "
+                f"with zero absences to get back on track."
+            )
+        else:
+            parts.append(
+                f"You're at {pct:.1f}%, close to the {threshold_pct:.0f}% line. "
+                f"You have about {bunks} safe bunk{'s' if bunks != 1 else ''} left — "
+                f"use them carefully."
+            )
     else:
         if needed > 0:
             parts.append(
@@ -143,6 +157,8 @@ def recommend(subjects: list[dict], threshold: float = DEFAULT_THRESHOLD) -> lis
         projected = project_attendance(s["weekly_series"], weeks_ahead=4)
         score = risk_score(s["attendance_pct"], s["trend_slope"], threshold_pct)
         level = classify_risk(score)
+        if needed > 0 and level == "Safe":   # below the requirement can never be "Safe"
+            level = "Moderate"
         message = build_message(
             s["subject"], s["attendance_pct"], level, bunks, needed,
             s["trend_label"], s["worst_day"], projected, threshold_pct

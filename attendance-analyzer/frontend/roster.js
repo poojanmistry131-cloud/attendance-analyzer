@@ -11,23 +11,33 @@
    for localStorage to be shared — which is the normal case here.
    ========================================================================== */
 
-const ALERT_EMAIL = "12302080701097@mbit.edu.in";
-
 // `pct` is only the starting value. Once you open a student on the
 // dashboard, the real (live) percentage replaces it everywhere.
 const ROSTER = [
-  { name: "Poojan Patel",   enrollment: "12302080701101", email: ALERT_EMAIL, pct: 58 },
-  { name: "Pradeep Yadav",  enrollment: "12302080701162", email: ALERT_EMAIL, pct: 91 },
-  { name: "Moksh Shah",     enrollment: "12302080701073", email: ALERT_EMAIL, pct: 42 },
-  { name: "Riya Desai",     enrollment: "12302080701138", email: ALERT_EMAIL, pct: 88 },
-  { name: "Kunal Chauhan",  enrollment: "12302080701054", email: ALERT_EMAIL, pct: 65 },
-  { name: "Devika Trivedi", enrollment: "12302080701119", email: ALERT_EMAIL, pct: 80 },
+  { name: "Poojan Patel",   enrollment: "12302080701101", pct: 58 },
+  { name: "Pradeep Yadav",  enrollment: "12302080701162", pct: 91 },
+  { name: "Moksh Shah",     enrollment: "12302080701073", pct: 42 },
+  { name: "Riya Desai",     enrollment: "12302080701138", pct: 88 },
+  { name: "Kunal Chauhan",  enrollment: "12302080701054", pct: 65 },
+  { name: "Devika Trivedi", enrollment: "12302080701119", pct: 80 },
 ];
+
+function escapeHtml(value) {
+  const entities = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  };
+  return String(value).replace(/[&<>"']/g, (character) => entities[character]);
+}
 
 const AL_KEYS = {
   students: "al_students_v1", // { [name]: { marks, fromDate, toDate } }
   pct: "al_live_pct_v1",      // { [name]: number }  overall attendance %
   current: "al_current_student_v1",
+  recipientEmails: "al_recipient_emails_v1",
 };
 
 function alRead(key, fallback) {

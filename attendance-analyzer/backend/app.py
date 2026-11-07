@@ -18,6 +18,8 @@ Endpoints:
 Run with:  uvicorn app:app --reload --port 8000
 """
 
+import os
+
 from fastapi import FastAPI, UploadFile, File, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -34,10 +36,11 @@ app = FastAPI(
 )
 
 # Allow the local static frontend (served on any localhost port) to call this API.
+# Only pages served from this computer (localhost / 127.0.0.1, any port) may call
+# the API. "*" would let ANY website you visit send emails through your Gmail.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origin_regex=r"^http://(localhost|127\.0\.0\.1)(:\d+)?$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -46,7 +49,8 @@ app.add_middleware(
 # swap for a DB/session store if this ever needs multi-user support).
 STATE: dict[str, pd.DataFrame] = {"df": None}
 
-SAMPLE_PATH = "sample_data.csv"
+# Absolute path, so the sample loads no matter which folder uvicorn is started from.
+SAMPLE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data.csv")
 
 
 @app.get("/api/health")

@@ -195,11 +195,11 @@ function renderSummary(liveMap) {
     </div>
     <div class="summary-tile">
       <span class="label">Strongest subject</span>
-      <span class="value small">${best ? best.subject : "Not marked yet"}</span>
+      <span class="value small">${escapeHtml(best ? best.subject : "Not marked yet")}</span>
     </div>
     <div class="summary-tile">
       <span class="label">Weakest subject</span>
-      <span class="value small">${worst ? worst.subject : "Not marked yet"}</span>
+      <span class="value small">${escapeHtml(worst ? worst.subject : "Not marked yet")}</span>
     </div>
   `;
 }
@@ -215,7 +215,7 @@ function renderSubjectList(liveMap) {
       const item = document.createElement("div");
       item.className = "subject-item" + (s.subject === state.selectedSubject ? " active" : "");
       item.innerHTML = `
-        <span class="name">${s.subject}</span>
+        <span class="name">${escapeHtml(s.subject)}</span>
         <span class="pct ${cls}">${s.pct.toFixed(1)}%</span>
       `;
       item.addEventListener("click", () => {
@@ -329,14 +329,17 @@ function projectNext(series) {
   return Math.max(0, Math.min(100, slope * n + intercept));
 }
 
-/** Same attendance-requirement math as recommender.py's safe_bunks(). */
+/** Same attendance-requirement math as recommender.py's safe_bunks().
+ *  Uses whole-number percentages so floating-point rounding can't make the
+ *  answer off by one (e.g. 4.2 / 0.35 = 12.000000000000002 -> 13). */
 function safeBunksCalc(attended, total, threshold) {
   if (total === 0) return { bunks: 0, needed: 0 };
-  const maxTotal = attended / threshold;
-  const bunks = Math.floor(maxTotal - total);
+  const p = Math.round(threshold * 100);          // e.g. 0.75 -> 75
+  if (p >= 100) return { bunks: 0, needed: 0 };
+  const bunks = Math.floor((attended * 100 - p * total) / p);
   if (bunks >= 0) return { bunks, needed: 0 };
-  const needed = Math.ceil(Math.max((threshold * total - attended) / (1 - threshold), 0));
-  return { bunks: 0, needed };
+  const needed = Math.ceil((p * total - 100 * attended) / (100 - p));
+  return { bunks: 0, needed: Math.max(needed, 0) };
 }
 
 /** Same blended 0-100 risk score as recommender.py's risk_score(). */
@@ -369,7 +372,7 @@ function buildMessageCalc(subject, pct, level, bunks, needed, trendLabel, bunkDa
       `You're comfortably above the ${thresholdPct.toFixed(0)}% mark at ${pct.toFixed(1)}%. ` +
       `You can afford to miss ${bunks} more class${bunks !== 1 ? "es" : ""} and still stay compliant.`
     );
-  } else if (level === "Moderate") {
+  } else if (level === "Moderate" && needed === 0) {
     parts.push(
       `You're at ${pct.toFixed(1)}%, close to the ${thresholdPct.toFixed(0)}% line. ` +
       `You have about ${bunks} safe bunk${bunks !== 1 ? "s" : ""} left — use them carefully.`
@@ -470,7 +473,8 @@ function computeLiveStats(subject, thresholdPct) {
   const projected = projectNext(monthlySeries);
   const { bunks, needed } = safeBunksCalc(attended, total, thresholdPct / 100);
   const score = riskScoreCalc(pct, slope, thresholdPct);
-  const level = classifyRiskCalc(score);
+  let level = classifyRiskCalc(score);
+  if (needed > 0 && level === "Safe") level = "Moderate"; // below the requirement can never be "Safe"
   const message = buildMessageCalc(subject, pct, level, bunks, needed, trendLabel, bunkDays, projected, thresholdPct);
 
   return {
@@ -989,8 +993,8 @@ function renderStudentMenu() {
   $("studentMenu").innerHTML = ROSTER.map((r) => {
     const pct = typeof live[r.name] === "number" ? live[r.name] : r.pct;
     const active = r.name === state.currentStudent ? " active" : "";
-    return `<button class="dropdown-item${active}" data-student="${r.name}">
-      ${r.name} <span class="dropdown-item-hint">${formatPct(pct)}</span>
+    return `<button class="dropdown-item${active}" data-student="${escapeHtml(r.name)}">
+      ${escapeHtml(r.name)} <span class="dropdown-item-hint">${formatPct(pct)}</span>
     </button>`;
   }).join("");
 }

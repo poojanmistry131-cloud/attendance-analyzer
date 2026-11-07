@@ -859,6 +859,16 @@ code {
   cursor: pointer;
 }
 
+.recipientEmail {
+  width: 190px;
+  padding: 7px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+}
+
 .roster-pct {
   font-family: var(--font-mono);
   font-weight: 600;
