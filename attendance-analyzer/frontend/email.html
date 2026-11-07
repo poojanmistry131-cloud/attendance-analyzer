@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Email Low-Attendance Alerts — Attendance Ledger</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- ===== Top bar ===== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">AL</div>
+        <div class="brand-text">
+          <h1>Attendance Ledger</h1>
+          <p class="tagline">Email low-attendance alerts to students</p>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <a href="index.html" class="btn">&larr; Back to dashboard</a>
+      </div>
+    </header>
+
+    <main class="dashboard">
+
+      <section class="email-panel">
+        <div class="email-panel-header">
+          <div>
+            <span class="eyebrow">Bunk-risk recommender</span>
+            <h2>Select students to notify</h2>
+          </div>
+          <span id="selectedCount" class="risk-pill neutral">0 selected</span>
+        </div>
+
+        <div class="roster-table-wrap">
+          <table class="roster-table">
+            <thead>
+              <tr>
+                <th class="col-check"><input type="checkbox" id="selectAllChk" /></th>
+                <th class="col-sr">Sr. No.</th>
+                <th>Student Name</th>
+                <th>Enrollment No.</th>
+                <th>Email</th>
+                <th>Attendance</th>
+                <th class="col-check">Notify</th>
+              </tr>
+            </thead>
+            <tbody id="rosterBody"></tbody>
+          </table>
+        </div>
+
+        <div class="email-panel-footer">
+          <label class="email-subject-field">
+            <span>Subject</span>
+            <input type="text" id="emailSubject" value="Low attendance notice" />
+          </label>
+          <button id="sendEmailBtn" class="btn btn-primary" disabled>Send reminder emails</button>
+        </div>
+      </section>
+
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="roster.js"></script>
+  <script src="email.js"></script>
+</body>
+</html>

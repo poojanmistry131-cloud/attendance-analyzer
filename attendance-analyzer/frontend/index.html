@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Attendance Ledger — Bunk-Risk Recommender</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="app">
+
+    <!-- ===== Top bar ===== -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">AL</div>
+        <div class="brand-text">
+          <h1>Attendance Ledger</h1>
+          <p class="tagline">Pattern analysis &amp; bunk-risk recommendations</p>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <div class="dropdown" id="studentDropdown">
+          <button id="studentBtn" class="btn" aria-haspopup="true" aria-expanded="false">
+            <span class="student-btn-label">Student:</span>
+            <span id="studentBtnName">Select student</span>
+            <span class="dropdown-caret">▾</span>
+          </button>
+          <div id="studentMenu" class="dropdown-menu student-menu hidden"></div>
+        </div>
+
+        <div class="dropdown" id="sampleDataDropdown">
+          <button id="loadSampleDataBtn" class="btn btn-primary" aria-haspopup="true" aria-expanded="false">
+            Load sample data <span class="dropdown-caret">▾</span>
+          </button>
+          <div id="sampleDataMenu" class="dropdown-menu hidden">
+            <button class="dropdown-item" data-sample="1">Sample 1 <span class="dropdown-item-hint">mixed risk</span></button>
+            <button class="dropdown-item" data-sample="2">Sample 2 <span class="dropdown-item-hint">mostly strong</span></button>
+            <button class="dropdown-item" data-sample="3">Sample 3 <span class="dropdown-item-hint">mostly at-risk</span></button>
+          </div>
+        </div>
+
+        <a href="email.html" class="btn">Email</a>
+
+        <label class="threshold-control">
+          <span>Required attendance</span>
+          <select id="thresholdSelect">
+            <option value="0.65">65%</option>
+            <option value="0.70">70%</option>
+            <option value="0.75" selected>75%</option>
+            <option value="0.80">80%</option>
+            <option value="0.85">85%</option>
+          </select>
+        </label>
+      </div>
+    </header>
+
+    <!-- ===== Error state (shown only if the register fails to load) ===== -->
+    <section id="emptyState" class="empty-state hidden">
+      <div class="empty-card">
+        <div class="empty-icon">▤</div>
+        <h2>Couldn't load the register</h2>
+        <p id="emptyStateMessage">Something went wrong while loading attendance data.</p>
+        <div class="empty-actions">
+          <button id="retryBtn" class="btn btn-primary">Retry</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== Main dashboard (hidden until data loaded) ===== -->
+    <main id="dashboard" class="dashboard hidden">
+
+      <!-- Summary strip -->
+      <section class="summary-strip" id="summaryStrip"></section>
+
+      <div class="dash-grid">
+
+        <!-- Sidebar: subject list -->
+        <aside class="subject-panel">
+          <h3 class="panel-title">Subjects</h3>
+          <div id="subjectList" class="subject-list"></div>
+        </aside>
+
+        <!-- Main content for the selected subject -->
+        <section class="detail-panel">
+
+          <div class="detail-header">
+            <div>
+              <span class="eyebrow" id="detailEyebrow">Bunk-risk recommender</span>
+              <h2 id="detailSubjectName">—</h2>
+            </div>
+            <span id="riskPill" class="risk-pill">—</span>
+          </div>
+
+          <div class="gauge-row">
+            <div class="gauge-card">
+              <svg id="gaugeSvg" viewBox="0 0 240 150" class="gauge-svg"></svg>
+              <div class="gauge-readout">
+                <span id="gaugeValue" class="gauge-value">—</span>
+                <span class="gauge-label">safe bunks left</span>
+              </div>
+            </div>
+
+            <div class="stat-cards">
+              <div class="stat-card">
+                <span class="stat-label">Attendance</span>
+                <span id="statPct" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Attended / Total</span>
+                <span id="statFraction" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Trend</span>
+                <span id="statTrend" class="stat-value">—</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-label">Next month projection</span>
+                <span id="statProjection" class="stat-value">—</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="recommendation-card" id="recommendationCard">
+            <span class="eyebrow">Recommendation</span>
+            <p id="recommendationText">—</p>
+          </div>
+
+          <div class="charts-row">
+            <div class="chart-card">
+              <h4>Monthly attendance trend</h4>
+              <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+            </div>
+            <div class="chart-card">
+              <h4>Attendance by day of week</h4>
+              <div class="chart-wrap"><canvas id="dayChart"></canvas></div>
+            </div>
+          </div>
+
+          <div class="calendar-card">
+            <div class="calendar-card-header">
+              <h4>Attendance register — <span id="calendarSubjectName">—</span></h4>
+              <div class="calendar-controls">
+                <label class="cal-date-field">
+                  <span>From</span>
+                  <input type="date" id="calFromDate" class="cal-date-input" />
+                </label>
+                <span class="range-sep">→</span>
+                <label class="cal-date-field">
+                  <span>To</span>
+                  <input type="date" id="calToDate" class="cal-date-input" />
+                </label>
+                <span id="calRangeDays" class="range-days-pill">— days</span>
+              </div>
+            </div>
+
+            <p class="calendar-hint">Every day opens unmarked — nothing is pre-filled. Click a date to cycle: present → absent → holiday → unmarked. Holidays don't count toward attendance.</p>
+
+            <div id="calendarScroll" class="calendar-scroll"></div>
+
+            <div class="calendar-legend">
+              <span><i class="dot present"></i>Present</span>
+              <span><i class="dot absent"></i>Absent</span>
+              <span><i class="dot holiday"></i>Holiday</span>
+              <span><i class="dot unmarked"></i>Unmarked</span>
+              <span><i class="dot blurred"></i>Outside range — blurred, unmarked</span>
+              <span class="legend-note" id="calTallyNote"></span>
+            </div>
+          </div>
+
+        </section>
+      </div>
+    </main>
+
+    <div id="toast" class="toast hidden"></div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script src="roster.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
